@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Layout Creator</title>
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <!-- GridStack CSS para o layout de grade arrastar/soltar -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack-extra.min.css"
+      rel="stylesheet"
+    />
+
+    <!-- Estilos personalizados -->
+    <style>
+      :root {
+        --widget-bg: #ffffff;
+        --widget-border: #e0e0e0;
+        --header-bg: #f8f9fa;
+      }
+
+      body {
+        background-color: #f5f5f5;
+        padding-bottom: 30px;
+      }
+
+      .grid-stack {
+        background-color: #f0f0f0;
+        border-radius: 6px;
+        min-height: 70vh;
+      }
+
+      .grid-stack-item-content {
+        background-color: var(--widget-bg);
+        border: 1px solid var(--widget-border);
+        border-radius: 6px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .widget-header {
+        background-color: var(--header-bg);
+        padding: 10px;
+        border-bottom: 1px solid var(--widget-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .widget-title {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .widget-content {
+        padding: 15px;
+        height: calc(100% - 42px);
+        overflow: auto;
+      }
+
+      .widget-toolbox {
+        padding: 1rem;
+        background-color: white;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .widget-button {
+        margin-bottom: 0.5rem;
+      }
+
+      .btn-remove-widget {
+        background: none;
+        border: none;
+        color: #dc3545;
+        font-size: 16px;
+        line-height: 1;
+        padding: 0 5px;
+      }
+
+      .placeholder-chart {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f9f9f9;
+        border-radius: 4px;
+        color: #666;
+      }
+
+      .profile-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+      }
+
+      .profile-image {
+        width: 64px;
+        height: 64px;
+        background-color: #e0e0e0;
+        border-radius: 50%;
+        margin-bottom: 10px;
+      }
+
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        height: 100%;
+      }
+
+      .metric-card {
+        background-color: #f9f9f9;
+        border-radius: 4px;
+        padding: 10px;
+      }
+
+      .metric-title {
+        font-size: 12px;
+        color: #666;
+      }
+
+      .metric-value {
+        font-size: 18px;
+        font-weight: bold;
+      }
+
+      .notification-item {
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+      }
+
+      .notification-item:last-child {
+        border-bottom: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container mt-4">
+      <div class="row mb-4">
+        <div class="col-12">
+          <h1 class="mb-3">Dashboard Layout Creator</h1>
+
+          <div class="d-flex gap-2 mb-4">
+            <button id="saveLayout" class="btn btn-primary">
+              Salvar Layout
+            </button>
+            <button id="loadLayout" class="btn btn-secondary">
+              Carregar Layout
+            </button>
+            <button id="clearLayout" class="btn btn-danger">
+              Limpar Layout
+            </button>
+          </div>
+
+          <div class="widget-toolbox">
+            <h5>Elementos Disponíveis</h5>
+            <div class="d-flex flex-wrap gap-2" id="widgetButtons">
+              <!-- Botões gerados via JavaScript -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-12">
+          <!-- GridStack Container -->
+          <div class="grid-stack"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Templates dos componentes Lit (definidos inline para simplificar) -->
+    <script type="module">
+      import {
+        LitElement,
+        html,
+        css,
+      } from "https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js";
+
+      // Componente base para todos os widgets
+      class BaseWidget extends LitElement {
+        static properties = {
+          title: { type: String },
+        };
+
+        static styles = css`
+          :host {
+            display: block;
+            height: 100%;
+          }
+
+          .widget-content {
+            height: 100%;
+            padding: 15px;
+          }
+        `;
+
+        render() {
+          return html`
+            <div class="widget-content">
+              <slot></slot>
+            </div>
+          `;
+        }
+      }
+
+      // Gráfico de Linha
+      class LineChartWidget extends BaseWidget {
+        render() {
+          return html`
+            <div class="widget-content">
+              <div class="placeholder-chart">[Gráfico de Linha]</div>
+            </div>
+          `;
+        }
+      }
+      customElements.define("line-chart-widget", LineChartWidget);
+
+      // Gráfico de Barras
+      class BarChartWidget extends BaseWidget {
+        render() {
+          return html`
+            <div class="widget-content">
+              <div class="placeholder-chart">[Gráfico de Barras]</div>
+            </div>
+          `;
+        }
+      }
+      customElements.define("bar-chart-widget", BarChartWidget);
+
+      // Gráfico de Pizza
+      class PieChartWidget extends BaseWidget {
+        render() {
+          return html`
+            <div class="widget-content">
+              <div class="placeholder-chart">[Gráfico de Pizza]</div>
+            </div>
+          `;
+        }
+      }
+      customElements.define("pie-chart-widget", PieChartWidget);
+
+      // Tabela de Dados
+      class DataTableWidget extends BaseWidget {
+        render() {
+          return html`
+            <div class="widget-content">
+              <div class="placeholder-chart">[Tabela de Dados]</div>
+            </div>
+          `;
+        }
+      }
+      customElements.define("data-table-widget", DataTableWidget);
+
+      // Perfil do Usuário
+      class ProfileCardWidget extends BaseWidget {
+        render() {
+          return html`
+            <div class="widget-content">
+              <div class="profile-placeholder">
+                <div class="profile-image"></div>
+                <div>Nome do Usuário</div>
+              </div>
+            </div>
+          `;
+        }
+      }
+      customElements.define("profile-card-widget", ProfileCardWidget);
+
+      // Métricas Principais
+      class MetricsWidget extends BaseWidget {
+        render() {
+          return html`
+            <div class="widget-content">
+              <div class="metrics-grid">
+                <div class="metric-card">
+                  <div class="metric-title">Vendas</div>
+                  <div class="metric-value">€12,345</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-title">Clientes</div>
+                  <div class="metric-value">2,543</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-title">Conversão</div>
+                  <div class="metric-value">4.5%</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-title">Tickets</div>
+                  <div class="metric-value">68</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      }
+      customElements.define("metrics-widget", MetricsWidget);
+
+      // Calendário
+      class CalendarWidget extends BaseWidget {
+        render() {
+          return html`
+            <div class="widget-content">
+              <div class="placeholder-chart">[Calendário]</div>
+            </div>
+          `;
+        }
+      }
+      customElements.define("calendar-widget", CalendarWidget);
+
+      // Notificações
+      class NotificationsWidget extends BaseWidget {
+        render() {
+          return html`
+            <div class="widget-content">
+              <div
+                style="height: 100%; background-color: #f9f9f9; border-radius: 4px; padding: 10px;"
+              >
+                <div class="notification-item">Notificação 1</div>
+                <div class="notification-item">Notificação 2</div>
+                <div class="notification-item">Notificação 3</div>
+              </div>
+            </div>
+          `;
+        }
+      }
+      customElements.define("notifications-widget", NotificationsWidget);
+    </script>
+
+    <!-- GridStack JS -->
+    <script src="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack-all.js"></script>
+
+    <!-- Script principal -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Definição dos widgets disponíveis
+        const WIDGET_TYPES = {
+          lineChart: {
+            title: "Gráfico de Linha",
+            tagName: "line-chart-widget",
+            width: 4,
+            height: 4,
+          },
+          barChart: {
+            title: "Gráfico de Barras",
+            tagName: "bar-chart-widget",
+            width: 4,
+            height: 4,
+          },
+          pieChart: {
+            title: "Gráfico de Pizza",
+            tagName: "pie-chart-widget",
+            width: 4,
+            height: 4,
+          },
+          dataTable: {
+            title: "Tabela de Dados",
+            tagName: "data-table-widget",
+            width: 6,
+            height: 5,
+          },
+          profileCard: {
+            title: "Perfil do Usuário",
+            tagName: "profile-card-widget",
+            width: 3,
+            height: 4,
+          },
+          metrics: {
+            title: "Métricas Principais",
+            tagName: "metrics-widget",
+            width: 4,
+            height: 4,
+          },
+          calendar: {
+            title: "Calendário",
+            tagName: "calendar-widget",
+            width: 4,
+            height: 5,
+          },
+          notifications: {
+            title: "Notificações",
+            tagName: "notifications-widget",
+            width: 3,
+            height: 4,
+          },
+        };
+
+        // Criar botões para os widgets disponíveis
+        const widgetButtonsContainer = document.getElementById("widgetButtons");
+
+        Object.entries(WIDGET_TYPES).forEach(([type, widgetConfig]) => {
+          const button = document.createElement("button");
+          button.className = "btn btn-outline-primary btn-sm widget-button";
+          button.textContent = widgetConfig.title;
+          button.dataset.widgetType = type;
+
+          button.addEventListener("click", () => addWidget(type));
+
+          widgetButtonsContainer.appendChild(button);
+        });
+
+        // Inicializar o GridStack
+        const grid = GridStack.init({
+          column: 12,
+          cellHeight: 60,
+          margin: 10,
+          animate: true,
+          resizable: {
+            handles: "all",
+          },
+          draggable: {
+            handle: ".widget-header",
+          },
+        });
+
+        // Contador para IDs únicos
+        let widgetCounter = 0;
+
+        // Função para adicionar um novo widget
+        function addWidget(widgetType) {
+          const widgetConfig = WIDGET_TYPES[widgetType];
+          const widgetId = `widget-${widgetCounter++}`;
+
+          // Criar o elemento do widget
+          const widgetElement = document.createElement("div");
+          widgetElement.className = "grid-stack-item";
+          widgetElement.dataset.widgetType = widgetType;
+
+          // Criar o conteúdo do widget
+          const widgetContent = document.createElement("div");
+          widgetContent.className = "grid-stack-item-content";
+
+          // Criar o cabeçalho do widget
+          const widgetHeader = document.createElement("div");
+          widgetHeader.className = "widget-header";
+
+          const widgetTitle = document.createElement("h6");
+          widgetTitle.className = "widget-title";
+          widgetTitle.textContent = widgetConfig.title;
+
+          const removeButton = document.createElement("button");
+          removeButton.className = "btn-remove-widget";
+          removeButton.innerHTML = "&times;";
+          removeButton.addEventListener("click", () => {
+            grid.removeWidget(widgetElement);
+          });
+
+          widgetHeader.appendChild(widgetTitle);
+          widgetHeader.appendChild(removeButton);
+
+          // Criar o componente Lit
+          const litComponent = document.createElement(widgetConfig.tagName);
+
+          // Montar a estrutura do widget
+          widgetContent.appendChild(widgetHeader);
+          widgetContent.appendChild(litComponent);
+          widgetElement.appendChild(widgetContent);
+
+          // Adicionar o widget ao grid
+          grid.addWidget(widgetElement, {
+            x: 0, // Posição automática
+            y: 0, // Posição automática
+            w: widgetConfig.width,
+            h: widgetConfig.height,
+            id: widgetId,
+          });
+        }
+
+        // Salvar o layout
+        document.getElementById("saveLayout").addEventListener("click", () => {
+          const serializedLayout = grid.save();
+
+          // Adicionar informações sobre o tipo de widget
+          const enhancedLayout = serializedLayout.map((item) => {
+            const gridItem = grid.engine.nodes.find(
+              (node) => node.id === item.id
+            );
+            const element = gridItem.el;
+
+            return {
+              ...item,
+              widgetType: element.dataset.widgetType,
+            };
+          });
+
+          localStorage.setItem(
+            "dashboardLayout",
+            JSON.stringify(enhancedLayout)
+          );
+          alert("Layout salvo com sucesso!");
+        });
+
+        // Carregar o layout
+        document.getElementById("loadLayout").addEventListener("click", () => {
+          const savedLayout = localStorage.getItem("dashboardLayout");
+
+          if (savedLayout) {
+            // Limpar o grid atual
+            grid.removeAll();
+
+            // Carregar o layout salvo
+            const layoutData = JSON.parse(savedLayout);
+
+            // Restaurar contador de widgets
+            widgetCounter = layoutData.reduce((maxId, item) => {
+              const idMatch = item.id?.match(/widget-(\d+)/);
+              if (idMatch) {
+                return Math.max(maxId, parseInt(idMatch[1], 10) + 1);
+              }
+              return maxId;
+            }, 0);
+
+            // Adicionar widgets salvos
+            layoutData.forEach((nodeData) => {
+              const widgetType = nodeData.widgetType;
+              const widgetConfig = WIDGET_TYPES[widgetType];
+
+              if (!widgetConfig) return; // Tipo de widget não encontrado
+
+              // Criar o elemento do widget
+              const widgetElement = document.createElement("div");
+              widgetElement.className = "grid-stack-item";
+              widgetElement.dataset.widgetType = widgetType;
+
+              // Criar o conteúdo do widget
+              const widgetContent = document.createElement("div");
+              widgetContent.className = "grid-stack-item-content";
+
+              // Criar o cabeçalho do widget
+              const widgetHeader = document.createElement("div");
+              widgetHeader.className = "widget-header";
+
+              const widgetTitle = document.createElement("h6");
+              widgetTitle.className = "widget-title";
+              widgetTitle.textContent = widgetConfig.title;
+
+              const removeButton = document.createElement("button");
+              removeButton.className = "btn-remove-widget";
+              removeButton.innerHTML = "&times;";
+              removeButton.addEventListener("click", () => {
+                grid.removeWidget(widgetElement);
+              });
+
+              widgetHeader.appendChild(widgetTitle);
+              widgetHeader.appendChild(removeButton);
+
+              // Criar o componente Lit
+              const litComponent = document.createElement(widgetConfig.tagName);
+
+              // Montar a estrutura do widget
+              widgetContent.appendChild(widgetHeader);
+              widgetContent.appendChild(litComponent);
+              widgetElement.appendChild(widgetContent);
+
+              // Adicionar o widget ao grid
+              grid.addWidget(widgetElement, {
+                x: nodeData.x,
+                y: nodeData.y,
+                w: nodeData.w,
+                h: nodeData.h,
+                id: nodeData.id || `widget-${widgetCounter++}`,
+              });
+            });
+
+            alert("Layout carregado com sucesso!");
+          } else {
+            alert("Nenhum layout encontrado!");
+          }
+        });
+
+        // Limpar o layout
+        document.getElementById("clearLayout").addEventListener("click", () => {
+          if (confirm("Tem certeza que deseja limpar o layout atual?")) {
+            grid.removeAll();
+          }
+        });
+      });
+    </script>
+
+    <!-- Bootstrap JS (opcional, usado principalmente para componentes interativos do Bootstrap) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
